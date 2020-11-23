@@ -137,7 +137,6 @@ exec su-exec "$@"
 ```
 .git*
 node_modules
-docker-compose.yml
 docker-*
 Dockerfile*
 jsconfig.json
