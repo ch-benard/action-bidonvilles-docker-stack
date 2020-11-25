@@ -8,11 +8,10 @@
 
 ```yaml
 version: '3.4'
-
 services:
     rb-api:
         build:
-            context: ../rb-api
+            context: ../action-bidonvilles-api
             target: prod
         container_name: rb_api
         env_file: ./config/.env.staging
@@ -28,10 +27,7 @@ services:
         container_name: rb_database
         volumes:
             - rb-pg-data:/var/lib/postgresql/data
-        environment:
-            - POSTGRES_USER=userPostgres
-            - POSTGRES_PASSWORD=passwordPostgres
-            - POSTGRES_DB=bddName
+        env_file: ./config/.env.staging
         healthcheck:
             test: pg_isready -U postgres -h rb-database
         networks:
@@ -39,7 +35,7 @@ services:
 
     rb-front:
         build:
-            context: ../rb-front
+            context: ../action-bidonvilles
             target: production-stage
         container_name: rb_front
         env_file: ./config/.env.staging
@@ -48,11 +44,13 @@ services:
             - "80:80"
             - "443:443"
         volumes:
+            - ./nginx-conf-tweak/nginx-alpine.conf:/etc/nginx/nginx.conf
             - ./nginx-conf:/etc/nginx/conf.d
             - certbot-etc:/etc/letsencrypt
             - certbot-var:/var/lib/letsencrypt
             - ssl:/etc/ssl/
             - web-root:/var/www/html
+            - dhparam:/etc/ssl/certs
         depends_on:
             - rb-api
         networks:
@@ -66,8 +64,8 @@ services:
             - certbot-var:/var/lib/letsencrypt
             - ssl:/etc/ssl/
             - web-root:/var/www/html
-        #depends_on:
-        #    - rb-front
+        depends_on:
+            - rb-front
         # command: certonly --webroot --webroot-path=/var/www/html --email email@domaine.com --agree-tos --no-eff-email --staging -d url.action.bidonville.fr  -d url.api.action.bidonville.fr
         # command: certonly --webroot --webroot-path=/var/www/html --email email@domaine.com --agree-tos --no-eff-email --force-renewal -d url.action.bidonville.fr -d url.api.action.bidonville.fr
 
@@ -80,13 +78,13 @@ volumes:
         driver: local
         driver_opts:
             type: none
-            device: /home/user_a_creer/rb-project/rb-front/dist
+            device: /home/user_a_creer/rb-project/action-bidonvilles/dist
             o: bind
     dhparam:
         driver: local
         driver_opts:
             type: none
-            device: /home/user_a_creer/rb-project/rb-deploy/dhparam/
+            device: /home/user_a_creer/rb-project/action-bidonvilles-deploy/dhparam/
             o: bind
 
 networks:
@@ -94,20 +92,60 @@ networks:
         driver: bridge
 ```
 
+## Modification du fichier de configuration de Nginx
 
-## nginx-conf/default.conf
+* Fichier *nginx-conf-tweak/nginx.conf* monté sur */etc/nginx/nginx.conf*
 
-* Configurer le serveur Web/reverse-proxy
+* Il s'agit d'une copie du fichier de l'image Docker Nginx à laquelle a été ajoutée une ligne permettant l'utilisation d'un nom de domaine long: *(server_names_hash_bucket_size 128;)*
+
+```
+user  nginx;
+worker_processes  auto;
+
+error_log  /var/log/nginx/error.log warn;
+pid        /var/run/nginx.pid;
+
+
+events {
+    worker_connections  1024;
+}
+
+
+http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+
+    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent "$http_referer" '
+                      '"$http_user_agent" "$http_x_forwarded_for"';
+
+    access_log  /var/log/nginx/access.log  main;
+
+    sendfile        on;
+    #tcp_nopush     on;
+
+    keepalive_timeout  65;
+
+    #gzip  on;
+    # avoid a possible hash bucket memory problem
+    server_names_hash_bucket_size 128;
+    include /etc/nginx/conf.d/*.conf;
+}
+```
+
+## Création du fichier de définition du server block
+
+* Fichier *nginx-conf/action-bidonvilles.conf* monté sur */etc/nginx/conf.d/action-bidonvilles.conf*
 
 ```
 # 443 - https on frontend
 server {
     listen 443 ssl http2;
     listen [::]:443 ssl http2;
-    server_name url.action.bidonville.fr;
+    server_name preprod.resorption-bidonvilles.beta.gouv.fr;
 
-    ssl_certificate /etc/letsencrypt/live/url.action.bidonville.fr/fullchain.pem; # managed by Certbot
-    ssl_certificate_key /etc/letsencrypt/live/url.action.bidonville.fr/privkey.pem; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/preprod.resorption-bidonvilles.beta.gouv.fr/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/preprod.resorption-bidonvilles.beta.gouv.fr/privkey.pem; # managed by Certbot
 
     root /var/www/html;
     index index.html app.html;
@@ -120,13 +158,13 @@ server {
 server {
      listen       443 ssl http2;
      listen       [::]:443 ssl http2;     
-     server_name  url.api.action.bidonville.fr;
+     server_name  api.preprod.resorption-bidonvilles.beta.gouv.fr;
 
-     ssl_certificate /etc/letsencrypt/live/url.action.bidonville.fr/fullchain.pem; # managed by Certbot
-     ssl_certificate_key /etc/letsencrypt/live/url.action.bidonville.fr/privkey.pem; # managed by Certbot
+     ssl_certificate /etc/letsencrypt/live/preprod.resorption-bidonvilles.beta.gouv.fr/fullchain.pem; # managed by Certbot
+     ssl_certificate_key /etc/letsencrypt/live/preprod.resorption-bidonvilles.beta.gouv.fr/privkey.pem; # managed by Certbot
 
      location / {
-          proxy_pass                 http://url.api.action.bidonville.fr:3000;
+          proxy_pass                 http://api.preprod.resorption-bidonvilles.beta.gouv.fr:3000;
           proxy_http_version         1.1;
           proxy_set_header Host      $host;
           proxy_set_header X-Real-IP $remote_addr;
@@ -137,15 +175,15 @@ server {
 server {
     listen 80;
     listen [::]:80;
-    server_name url.action.bidonville.fr;
+    server_name preprod.resorption-bidonvilles.beta.gouv.fr;
 
     return 301 https://$host$request_uri;
 }
 ```
 
-## config/.env.staging
+## Création du fichier d'initialisation des variables d'environnement
 
-* Initialiser les variables d'environnement
+* Fichier *config/.env.staging*
 
 ```
 NODE_ENV=Staging

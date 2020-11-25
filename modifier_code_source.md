@@ -61,7 +61,7 @@ module.exports = config;
 ## Stage 1: (production base)
 FROM node:14.15.0-alpine AS base
 # Information about this Docker image
-LABEL org.opencontainers.image.authors=ch.benard-chez-gmail.com
+LABEL org.opencontainers.image.authors=ch.benard[at]gmail.com
 LABEL org.opencontainers.image.title="Resorption Bidonvilles API Docker Images"
 LABEL org.opencontainers.image.licenses=MIT
 EXPOSE $API_CONTAINER_PORT
@@ -83,7 +83,7 @@ RUN yarn config list && yarn install --developement
 FROM builddev as dev
 CMD ["nodemon", "server/index.js", "--inspect=0.0.0.0:9229"]
 
-## Stage 3: (test)
+## Stage 4: (test)
 FROM builddev as test
 RUN echo "Skipping test for the moment..."
 # Pour qu'on ait à la fois les dépendances de dev et de prod:
@@ -93,7 +93,7 @@ RUN echo "Skipping test for the moment..."
 # RUN yarn test:unit
 # RUN yarn audit
 
-## Stage 4: (buildproduction)
+## Stage 5: (buildproduction)
 FROM base as prepaprod
 # Install project external dependencies and clean cache 
 # yarn install --frozen-lockfile is the closest yarn alternative to npm -ci
@@ -127,7 +127,7 @@ envsubst < /home/node/rb/api/server/config.js.sample > /home/node/rb/api/server/
 # cat /home/node/rb/api/server/config.js
 chown -R node /home/node/rb/api/
 # This does more or less exactly the same thing as gosu but it's 10kb for  instead of 1.8MB:
-exec su-exec "$@"
+exec su-exec node "$@"
 ```
 
 ### Préparer le fichier .dockerignore
@@ -137,7 +137,6 @@ exec su-exec "$@"
 ```
 .git*
 node_modules
-docker-compose.yml
 docker-*
 Dockerfile*
 jsconfig.json
