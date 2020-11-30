@@ -33,7 +33,7 @@ const config = {
     apiHostname: '${API_HOSTNAME}',
     apiExternalPort: ${API_EXTERNAL_PORT},
     auth: {
-        secret: '${SECRET_FOR_TOKEN}',
+        secret: '${SECRET_FOR_TOKENS}',
         expiresIn: '168h', // 7 days
     },
     activationTokenExpiresIn: '48h',
