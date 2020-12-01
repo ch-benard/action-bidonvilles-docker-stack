@@ -183,20 +183,20 @@ module.exports = {
 * Pour le moment, les étapes (stage) *develop-stage* et *build-stage* sont lancées manuellement pour créer une *release*. Le contenu du répertoire *dist* contenant la release est récupéré lors du clônage du dépôt Git. Ces étapes pourront être activées lors de la création des *github-actions* dans le cadre du déploiement continu.
 
 ```
-# # develop stage
+## develop stage
 # FROM node:14-alpine as develop-stage
 # WORKDIR /app
 # COPY package*.json ./
 # RUN yarn install
 # COPY . .
 
-# # build stage
+## build stage
 # FROM develop-stage as build-stage
 # RUN yarn build-staging
 # # Remplacer ci-dessous x.x.x par le numéro de la release
 # RUN yarn release ${FRONT_RELEASE}
 
-# production stage
+## production stage
 FROM nginx:mainline-alpine as production-stage
 WORKDIR /var/www/html
 #COPY --from=build-stage /app/dist /var/www/html
