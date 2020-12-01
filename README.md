@@ -8,4 +8,4 @@
 - Mettre en oeuvre la conteneurisation,
 - Faciliter la mise en oeuvre du déploiement continu.
 
-[Accès à la documentation](https://ch-benard.github.io/action-bidonvilles-docker-stack)
+[Accès à la documentation](https://ch-benard.github.io/action-bidonvilles-docker-stack-doc)
