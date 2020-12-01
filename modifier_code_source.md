@@ -65,7 +65,7 @@ LABEL org.opencontainers.image.authors=ch.benard[at]gmail.com
 LABEL org.opencontainers.image.title="Resorption Bidonvilles API Docker Images"
 LABEL org.opencontainers.image.licenses=MIT
 EXPOSE $API_CONTAINER_PORT
-# Defining the environment (dev, staging, prod, test)
+# Defining the environment (development, staging, production, test)
 ENV NODE_ENV=production
 # Create the app directory
 WORKDIR /home/node/rb/api
@@ -77,17 +77,21 @@ ENV NODE_ENV=development
 ENV PATH=/home/node/rb/api/node_modules/.bin:$PATH
 # Copy the files holding various metadata relevant to the project
 COPY package.json yarn.lock ./
-RUN yarn config list && yarn install --developement
+RUN yarn config list && yarn install --development
 
-# Stage 3: (dev)
-FROM builddev as dev
+# Stage 3: (development)
+FROM builddev as development
+RUN apk add gettext libintl && apk add --no-cache 'su-exec>=0.2'
+COPY rb-api-entrypoint.sh /usr/local/bin/
+RUN chmod u+x /usr/local/bin/rb-api-entrypoint.sh
+ENTRYPOINT ["/usr/local/bin/rb-api-entrypoint.sh"]
 CMD ["nodemon", "server/index.js", "--inspect=0.0.0.0:9229"]
 
 ## Stage 4: (test)
 FROM builddev as test
 RUN echo "Skipping test for the moment..."
-# Pour qu'on ait à la fois les dépendances de dev et de prod:
-# COPY --from=dev /home/node/rb/api/node_modules /home/node/rb/api/node_modules
+# Pour qu'on ait à la fois les dépendances de developpement et de production:
+# COPY --from=development /home/node/rb/api/node_modules /home/node/rb/api/node_modules
 # RUN eslint .
 # RUN yarn test
 # RUN yarn test:unit
@@ -102,32 +106,13 @@ RUN yarn config list && yarn install --production --frozen-lockfile --silent && 
 RUN rm -rf ./test
 
 ## Stage 6: (production)
-FROM prepaprod as prod
+FROM prepaprod as production
 RUN apk add --no-cache tini
-RUN pwd && ls -l
 RUN apk add gettext libintl && apk add --no-cache 'su-exec>=0.2'
 COPY rb-api-entrypoint.sh /usr/local/bin/
-RUN ls -l /usr/local/bin
+RUN chmod u+x /usr/local/bin/rb-api-entrypoint.sh
 ENTRYPOINT ["tini", "--", "/usr/local/bin/rb-api-entrypoint.sh"]
 CMD ["node", "server/index.js"]
-```
-
-### Préparer le script rb-api-entrypoint.sh
-
-* Ce script est requis pour substituer les variables dans les fichiers évoqués plus haut par leurs valeurs respectives contenues dans le fichier correspondant à l'environnement d'exécution visé: *production*, *development*, etc.
-
-* Le script permet également d'exécuter la commande node avec l'utilisateur node et non pas avec le compte de l'utilisateur *root*.
-
-```bash
-#!/bin/sh
-set -e
-envsubst < /home/node/rb/api/db/config/config.js.sample > /home/node/rb/api/db/config/config.js
-# cat /home/node/rb/api/db/config/config.js
-envsubst < /home/node/rb/api/server/config.js.sample > /home/node/rb/api/server/config.js
-# cat /home/node/rb/api/server/config.js
-chown -R node /home/node/rb/api/
-# This does more or less exactly the same thing as gosu but it's 10kb for  instead of 1.8MB:
-exec su-exec node "$@"
 ```
 
 ### Préparer le fichier .dockerignore
