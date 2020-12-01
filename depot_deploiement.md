@@ -94,7 +94,7 @@ networks:
 
 ## Modification du fichier de configuration de Nginx
 
-* Fichier *nginx-conf-tweak/nginx.conf* monté sur */etc/nginx/nginx.conf*
+* Fichier *nginx-conf-tweak/nginx-alpine.conf* monté sur */etc/nginx/nginx.conf*
 
 * Il s'agit d'une copie du fichier de l'image Docker Nginx à laquelle a été ajoutée une ligne permettant l'utilisation d'un nom de domaine long: *(server_names_hash_bucket_size 128;)*
 
