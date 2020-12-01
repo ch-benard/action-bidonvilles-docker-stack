@@ -120,14 +120,15 @@ CMD ["node", "server/index.js"]
 * Ce fichier, à l'instar du fichier .gitignore pour Git, permet de préciser la liste des fichiers et répertoires que l'image Docker ne doit pas embarquer.
 
 ```
-.git*
 node_modules
-docker-*
-Dockerfile*
-jsconfig.json
-README.md
-schema_*
-.dockerignore
+config.js
+.vscode
+coverage
+.nyc_output
+TODO
+.DS_Store
+postgres-data
+.idea
 ```
 
 ### Modifier le fichier server/app.html (facultatif)
