@@ -12,7 +12,7 @@ services:
     rb-api:
         build:
             context: ../action-bidonvilles-api
-            target: prod
+            target: production
         container_name: rb_api
         env_file: ./config/.env.staging
         depends_on:
