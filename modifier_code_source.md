@@ -131,7 +131,7 @@ postgres-data
 .idea
 ```
 
-### Modifier le fichier server/app.html (facultatif)
+### Modifier le fichier server/app.js (facultatif)
 
 * Permet d'afficher, en plus du port, le nom du host qui exécute Node.
 
