@@ -153,6 +153,7 @@ module.exports = {
 
 ### Créer le fichier *rb-api-entrypoint.sh*
 
+```bash
 #!/bin/sh
 set -e
 envsubst < /home/node/rb/api/db/config/config.js.sample > /home/node/rb/api/db/config/config.js
@@ -162,7 +163,7 @@ envsubst < /home/node/rb/api/server/config.js.sample > /home/node/rb/api/server/
 chown -R node /home/node/rb/api/
 # This does more or less exactly the same thing as gosu but it's 10kb for  instead of 1.8MB:
 exec su-exec node "$@"
-
+```
 
 ## Préparer la partie Front
 
