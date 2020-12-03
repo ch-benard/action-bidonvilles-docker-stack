@@ -4,22 +4,31 @@
 
 ### Prérequis
 
-* Les outils de développement doivent être installés sur le poste du dveloppeur (Nodejs, Yarn, Docker, Docker-compose, etc).
+* Ce qui suit permet de déployer un environnement de dévelopement rapidement sans avoir à modifier les répertoires Frontend et API.
+
+* Les outils de développement doivent être installés sur le poste du développeur (Nodejs, Yarn, Docker, Docker-compose, etc).
 
 * Pour déployer rapidement un environnement de développement sur un poste Linux:
 
 ```bash
+# Créer le répertoire du projet global (API, frontend, et outils de déploiement)
 mkdir resorption-bidonvilles
+# Se positionnner dans le répertoire du projet global
 cd resorption-bidonvilles
+# Clôner les dépôts si nécessaires
 git clone https://github.com/MTES-MCT/action-bidonvilles-api.git
 git clone https://github.com/MTES-MCT/action-bidonvilles.git
 git clone https://github.com/MTES-MCT/action-bidonvilles-infra.git
-
+# Se positionner dans le répertoire infra
 cd action-bidonvilles-infra
+# Exécuter la pile Postgresql + API en mode DEV
 docker-compose -f docker-compose-dev.yml up -d
 
+# Se positionner dans le répertoire du Frontend
 cd ../action-bidonvilles
 yarn install
+# Lancer le frontend en mode dev
+yarn dev
 ```
 
 ## Composition de l'environnment pour le développement
