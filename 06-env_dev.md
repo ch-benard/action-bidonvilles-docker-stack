@@ -39,15 +39,6 @@ echo "Lancement de nodemon"
 node_modules/.bin/nodemon server/index.js --inspect=0.0.0.0:9229
 ```
 
-### Dockerfile (API)
-
-```yml
-FROM node:14.15.0-alpine AS development
-RUN mkdir /home/node/app/ && chown node:node /home/node/app/
-USER node
-WORKDIR /home/node/app/
-```
-
 ### docker-compose-dev.yml
 
 ```yml
