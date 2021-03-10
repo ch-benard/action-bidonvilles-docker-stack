@@ -18,28 +18,35 @@
 
 * Ouvrir une session sur le VPS avec le compte debian
 
+* Supprimer toutes traces d'une éventuelle ancienne installation de Docker :
+
+```bash
+sudo apt-get remove docker docker-engine docker.io containerd runc
+```
+
 * Mettre à jour la liste des paquets:
 
 ```bash
 sudo apt update
 ```
 
-* Installer les paquerts requis:
+* Installer les paquets requis:
 
 ```bash
-sudo apt install apt-transport-https ca-certificates curl gnupg2 software-properties-common
+sudo apt install apt-transport-https ca-certificates curl gnupg lsb-release
 ```
 
 * Ajouter la clé GPG pour l'accès au dépôt officiel Docker:
 
 ```bash
-curl -fsSL https://download.docker.com/linux/debian/gpg | sudo apt-key add -
+curl -fsSL https://download.docker.com/linux/debian/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
 ```
 
 * Ajouter le dépôt Docker aux sources APT:
 
 ```bash
-sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/debian $(lsb_release -cs) stable"
+echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian \
+  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 ```
 
 * Actualiser la base de données des paquets disponibles
@@ -58,10 +65,10 @@ apt-cache policy docker-ce
 
 ```
 docker-ce:
-  Installed: (none)
-  Candidate: 5:19.03.13~3-0~debian-buster
+  Installed: 5:20.10.5~3-0~debian-buster
+  Candidate: 5:20.10.5~3-0~debian-buster
   Version table:
-     5:19.03.13~3-0~debian-buster 500
+ *** 5:20.10.5~3-0~debian-buster 500
         500 https://download.docker.com/linux/debian buster/stable amd64 Packages
   ...
 ```
@@ -69,7 +76,7 @@ docker-ce:
 * Lancer l'installation de Docker:
 
 ```bash
-sudo apt install docker-ce
+sudo apt-get install docker-ce docker-ce-cli containerd.io
 ```
 
 * Vérifier que Docker est installé et que le démon est bien lancé:
@@ -83,13 +90,13 @@ sudo systemctl status docker
 ```
 ● docker.service - Docker Application Container Engine
    Loaded: loaded (/lib/systemd/system/docker.service; enabled; vendor preset: enabled)
-   Active: active (running) since Thu 2020-11-19 09:41:27 UTC; 5min ago
+   Active: active (running) since Wed 2021-03-10 13:28:15 UTC; 8min ago
      Docs: https://docs.docker.com
- Main PID: 3767 (dockerd)
-    Tasks: 8
-   Memory: 41.7M
+ Main PID: 3833 (dockerd)
+    Tasks: 10
+   Memory: 55.4M
    CGroup: /system.slice/docker.service
-           └─3767 /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
+           └─3833 /usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock
 ```
 
 * A ce stade, Docker est installé. Il faut maintenant sécuriser le serveur pour empêcher toute tentative de connexion non souhaitée.
@@ -101,21 +108,19 @@ sudo systemctl status docker
 * Il s'agit de créer un compte utilisateur disposant des droits d'administration sur le serveur. Ceci permettra de désactiver le compte **root** et donc d'empêcher toute tentative de connexion avec ce compte en essayant des combinaisons différentes de mots de passes.
 
 ```bash
-sudo adduser user_a_creer
+sudo adduser rbadmin
 ```
-
-* **user_a_creer** comme "Résorption Bidonvilles ADMIN".
 
 * Saisir un mot de passe et le confirmer:
 
 ```
-Adding user `user_a_creer' ...
-Adding new group `user_a_creer' (1001) ...
-Adding new user `user_a_creer' (1001) with group `user_a_creer' ...
-Creating home directory `/home/user_a_creer' ...
+Adding user `rbadmin' ...
+Adding new group `rbadmin' (1001) ...
+Adding new user `rbadmin' (1001) with group `rbadmin' ...
+Creating home directory `/home/rbadmin' ...
 Copying files from `/etc/skel' ...
-New password: [Les Lunettes de Jean de la Fontaine]
-Retype new password: [Les Lunettes de Jean de la Fontaine]
+New password: ****
+Retype new password: ****
 passwd: password updated successfully
 ```
 
@@ -124,31 +129,31 @@ passwd: password updated successfully
 * Sur l'installation **Debian 10** fournie par OVH, il n'est pas nécessaire d'installer **sudo**: OVH l'a déjà fait pour nous. Mais si ce n'est pas le cas, il convient d'installer **sudo** de cette façon:
 
 ```bash
-apt install sudo
+apt-get install sudo
 ```
 
-* Il reste à ajouter l'utilisateur **user_a_creer** au groupe **sudo** pour lui permettre de disposer des droit d'administration:
+* Il reste à ajouter l'utilisateur **rbadmin** au groupe **sudo** pour lui permettre de disposer des droit d'administration:
 
 ```bash
-sudo usermod -aG root,sudo,adm user_a_creer
+sudo usermod -aG root,sudo,adm rbadmin
 ```
 
 * Vérifier que l'utilisateur est bien intégrés dans les groupes souhaités:
 
 ```bash
-cat /etc/group | grep user_a_creer
+cat /etc/group | grep rbadmin
 ```
 
 * Résultat:
 
 ```
-root:x:0:user_a_creer
-adm:x:4:debian,user_a_creer
-sudo:x:27:debian,user_a_creer
-user_a_creer:x:1001:
+root:x:0:rbadmin
+adm:x:4:debian,rbadmin
+sudo:x:27:debian,rbadmin
+rbadmin:x:1001:
 ```
 
-* Tout est conforme: user_a_creer figure bien dans les listes d'utilisateurs des groupes **adm**, **sudo** et **root**.
+* Tout est conforme: rbadmin figure bien dans les listes d'utilisateurs des groupes **adm**, **sudo** et **root**.
 
 ### Interdire la connexion en tant que root
 
@@ -181,11 +186,11 @@ PermitRootLogin no
 sudo service ssh restart
 ```
 
-* On peut maintenant fermer la session en cours et se reconnecter avec le compte **user_a_creer** et tester la commande **sudo**.
+* On peut maintenant fermer la session en cours et se reconnecter avec le compte **rbadmin** et tester la commande **sudo**.
 
 ```bash
 whoami
-user_a_creer
+rbadmin
 sudo ls -ial /
 ```
 
@@ -199,10 +204,10 @@ Administrator. It usually boils down to these three things:
     #2) Think before you type.
     #3) With great power comes great responsibility.
 
-[sudo] password for user_a_creer: 
+[sudo] password for rbadmin: 
 ```
 
-* Saisir à nouveau le mot de passe de l'utilisateur user_a_creer.
+* Saisir à nouveau le mot de passe de l'utilisateur rbadmin.
 
 * Résultat:
 
@@ -243,29 +248,29 @@ total 68
 
 ## Permettre l'exécution de la commande docker sans sudo
 
-* Par défaut, la commande **Docker** n'est utilisable que par l'utilisateur **root** ou un utilisateur du groupe **docker** créé automatiquement pendant la phase d'installation de Docker. On va donc ajouter l'utilisateur courant (user_a_creer) au groupe **docker** pour lui permettre de lancer les commandes docker sans utiliser **sudo**.
+* Par défaut, la commande **Docker** n'est utilisable que par l'utilisateur **root** ou un utilisateur du groupe **docker** créé automatiquement pendant la phase d'installation de Docker. On va donc ajouter l'utilisateur rbadmin au groupe **docker** pour lui permettre de lancer les commandes docker sans utiliser **sudo**.
 
 ```bash
-sudo usermod -aG docker ${USER}
+sudo usermod -aG docker rbadmin
 ```
 
 * On vérifie:
 
 ```bash
-sudo cat /etc/group | grep user_a_creer
-root:x:0:user_a_creer
-adm:x:4:debian,user_a_creer
-sudo:x:27:debian,user_a_creer
-docker:x:998:user_a_creer
-user_a_creer:x:1001:
+sudo cat /etc/group | grep rbadmin
+root:x:0:rbadmin
+adm:x:4:debian,rbadmin
+sudo:x:27:debian,rbadmin
+docker:x:998:rbadmin
+rbadmin:x:1001:
 ```
 
-* **user_a_creer** est bien dans le groupe **docker**.
+* **rbadmin** est bien dans le groupe **docker**.
 
 * Pour que cette modification soit appliquée, il faut normalement fermer la session pouis la réouvrir ou simplement lancer la commande suivante:
 
 ```bash
-su - ${USER}
+su - rbadmin
 ```
 
 * On vérifie:
@@ -277,10 +282,10 @@ id -nG
 * Résultat:
 
 ```
-user_a_creer root adm sudo docker
+rbadmin root adm sudo docker
 ```
 
-* On vérifie que l'utilisateur **user_a_creer** peut lancer la commande **docker**:
+* On vérifie que l'utilisateur **rbadmin** peut lancer la commande **docker**:
 
 ```bash
 docker version
@@ -290,32 +295,33 @@ docker version
 
 ```
 Client: Docker Engine - Community
- Version:           19.03.13
- API version:       1.40
+ Version:           20.10.5
+ API version:       1.41
  Go version:        go1.13.15
- Git commit:        4484c46d9d
- Built:             Wed Sep 16 17:02:55 2020
+ Git commit:        55c4c88
+ Built:             Tue Mar  2 20:17:50 2021
  OS/Arch:           linux/amd64
- Experimental:      false
+ Context:           default
+ Experimental:      true
 
 Server: Docker Engine - Community
  Engine:
-  Version:          19.03.13
-  API version:      1.40 (minimum version 1.12)
+  Version:          20.10.5
+  API version:      1.41 (minimum version 1.12)
   Go version:       go1.13.15
-  Git commit:       4484c46d9d
-  Built:            Wed Sep 16 17:01:25 2020
+  Git commit:       363e9a8
+  Built:            Tue Mar  2 20:15:47 2021
   OS/Arch:          linux/amd64
   Experimental:     false
  containerd:
-  Version:          1.3.7
-  GitCommit:        8fba4e9a7d01810a393d5d25a3621dc101981175
+  Version:          1.4.4
+  GitCommit:        05f951a3781f4f2c1911b05e61c160e9c30eaa8e
  runc:
-  Version:          1.0.0-rc10
-  GitCommit:        dc9208a3303feef5b3839f4323d9beb36df0a9dd
+  Version:          1.0.0-rc93
+  GitCommit:        12644e614e25b05da6fd08a38ffa0cfe1903fdec
  docker-init:
-  Version:          0.18.0
-  GitCommit:        fec3683
+  Version:          0.19.0
+  GitCommit:        de40ad0
 ```
 
 ## Installer docker-compose
@@ -325,11 +331,11 @@ Server: Docker Engine - Community
 * Récupérer et installer l'exécutable en lançant la commande suivante:
 
 ```bash
-sudo curl -L https://github.com/docker/compose/releases/download/1.27.4/docker-compose-`uname -s`-`uname -m` -o /usr/local/bin/docker-compose
-[sudo] password for user_a_creer: 
+sudo curl -L https://github.com/docker/compose/releases/download/1.28.5/docker-compose-`uname -s`-`uname -m` -o /usr/local/bin/docker-compose
+[sudo] password for rbadmin: 
 ```
 
-* Saisir le mot de passe de l'utilisateur **user_a_creer**. Résultat:
+* Saisir le mot de passe de l'utilisateur **rbadmin**. Résultat:
 
 ```
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
@@ -342,7 +348,19 @@ sudo curl -L https://github.com/docker/compose/releases/download/1.27.4/docker-c
 
 ```bash
 docker-compose --version
-docker-compose version 1.27.4, build 40524192
+docker-compose version 1.28.5, build 40524192
+```
+
+* Si une erreur du typesuivant s'affiche:
+
+```bash
+-bash: /usr/local/bin/docker-compose: Permission denied
+```
+
+* Exécuter la commande suivante  pour rendre la commande **docker-compose** exécutable par **root** et les membres du gorupe **root*:
+
+```bash
+sudo chmod ug+x /usr/local/bin/docker-compose 
 ```
 
 * **docker-compose** est installé.
